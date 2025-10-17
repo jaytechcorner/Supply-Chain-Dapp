@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supply Chain DApp — Debug Version</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body { background: #121212; color: #eee; font-family: sans-serif; padding: 20px; }
+    button { margin: 10px; padding: 10px 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top:20px; }
+    th, td { border: 1px solid #444; padding: 8px; }
+    th { background: #333; }
+    #status { margin-top: 20px; font-weight: bold;}
+  </style>
+</head>
+<body>
+  <h1>Supply Chain DApp (Debug)</h1>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="walletAddress">Wallet: —</p>
+  <p id="ownerAddress">Owner: —</p>
+  <p id="totalProductsCount">Total Products: —</p>
+
+  <div>
+    <input type="text" id="productName" placeholder="Product Name">
+    <button onclick="addProduct()">Add Product</button>
+  </div>
+  <div>
+    <button onclick="loadProducts()">Load Products</button>
+  </div>
+
+  <p id="status">Status: —</p>
+
+  <table id="productsTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>State</th><th>Manufacturer</th>
+        <th>Packer</th><th>Shipper</th><th>Retailer</th><th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody id="productsList"></tbody>
+  </table>
+
+  <script>
+    const contractAddress = "0x61C1d28CDb28851F405a2A78cA68D9c2fE56F0aC";
+    const contractABI = [
+      "function getAllProducts() view returns (tuple(uint256 id, string name, uint8 state, address manufacturer, address packer, address shipper, address retailer, uint256 timestamp)[])",
+      "function owner() view returns (address)",
+      "function productCount() view returns (uint256)",
+      "function addProduct(string memory _name) public"
+    ];
+    const stateLabels = ["Created","Packed","Shipped","Delivered"];
+
+    let provider, signer, contract;
+
+    function setStatus(msg) {
+      document.getElementById("status").innerText = "Status: " + msg;
+    }
+
+    async function connectWallet() {
+      console.log("connectWallet called");
+      if (typeof window.ethereum === 'undefined') {
+        alert("Wallet not found");
+        return;
+      }
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        console.log("provider:", provider);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        console.log("signer:", signer);
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+        console.log("contract object:", contract);
+
+        const address = await signer.getAddress();
+        document.getElementById("walletAddress").innerText = `Wallet: ${address}`;
+
+        // fetch owner
+        const ownerAddr = await contract.owner();
+        console.log("ownerAddr:", ownerAddr);
+        document.getElementById("ownerAddress").innerText = `Owner: ${ownerAddr}`;
+
+        const cnt = await contract.productCount();
+        console.log("productCount:", cnt.toString());
+        document.getElementById("totalProductsCount").innerText = `Total Products: ${cnt.toString()}`;
+
+        setStatus("Wallet connected and contract ready");
+      } catch (err) {
+        console.error("Error in connectWallet:", err);
+        setStatus("Error connecting wallet (see console)");
+      }
+    }
+
+    async function addProduct() {
+      const name = document.getElementById("productName").value;
+      console.log("addProduct called with name:", name);
+      if (!name) {
+        alert("Enter name");
+        return;
+      }
+      if (!contract) {
+        alert("Contract not ready");
+        return;
+      }
+      setStatus("Adding product...");
+      try {
+        const tx = await contract.addProduct(name);
+        console.log("tx:", tx);
+        const receipt = await tx.wait();
+        console.log("receipt:", receipt);
+        setStatus("Product added");
+      } catch (err) {
+        console.error("Error in addProduct:", err);
+        setStatus("Error adding product (see console)");
+      }
+    }
+
+    async function loadProducts() {
+      console.log("loadProducts called");
+      if (!contract) {
+        alert("Contract not ready");
+        return;
+      }
+      setStatus("Loading products...");
+      try {
+        const products = await contract.getAllProducts();
+        console.log("products raw:", products);
+        const tbody = document.getElementById("productsList");
+        tbody.innerHTML = "";
+
+        if (!products || products.length === 0) {
+          console.log("No products or empty");
+          document.getElementById("productsTable").style.display = "table";
+          setStatus("No products found");
+          return;
+        }
+
+        for (const p of products) {
+          console.log("product:", p);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${p.id.toString()}</td>
+            <td>${p.name}</td>
+            <td>${stateLabels[p.state]}</td>
+            <td>${p.manufacturer}</td>
+            <td>${p.packer}</td>
+            <td>${p.shipper}</td>
+            <td>${p.retailer}</td>
+            <td>${(new Date(p.timestamp * 1000)).toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+        document.getElementById("productsTable").style.display = "table";
+        setStatus("Products loaded");
+      } catch (err) {
+        console.error("Error in loadProducts:", err);
+        setStatus("Error loading products (see console)");
+      }
+    }
+  </script>
+</body>
+</html>
