@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Supply Chain DApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h1>🛒 Supply Chain DApp</h1>
+
+  <button onclick="connectWallet()">🔌 Connect Wallet</button>
+  <p id="walletAddress">Wallet not connected</p>
+
+  <h2>Add Product</h2>
+  <input type="text" id="productName" placeholder="Product Name">
+  <button onclick="addProduct()">Add Product</button>
+
+  <h2>All Products</h2>
+  <button onclick="loadProducts()">Load Products</button>
+  <ul id="productsList"></ul>
+
+  <script>
+    const contractAddress = "0x61C1d28CDb28851F405a2A78cA68D9c2fE56F0aC";
+    const contractABI = [
+      {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [
+          { "internalType": "string", "name": "_name", "type": "string" }
+        ],
+        "name": "addProduct",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getAllProducts",
+        "outputs": [
+          {
+            "components": [
+              { "internalType": "uint256", "name": "id", "type": "uint256" },
+              { "internalType": "string", "name": "name", "type": "string" },
+              { "internalType": "uint8", "name": "state", "type": "uint8" },
+              { "internalType": "address", "name": "manufacturer", "type": "address" },
+              { "internalType": "address", "name": "packer", "type": "address" },
+              { "internalType": "address", "name": "shipper", "type": "address" },
+              { "internalType": "address", "name": "retailer", "type": "address" },
+              { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+            ],
+            "internalType": "struct SupplyChain.Product[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
+    let provider;
+    let signer;
+    let contract;
+
+    async function connectWallet() {
+      if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+        const address = await signer.getAddress();
+        document.getElementById("walletAddress").innerText = `✅ Connected: ${address}`;
+        console.log("Wallet connected:", address);
+      } else {
+        alert("❌ MetaMask is not available. Please ensure it's installed and enabled.");
+      }
+    }
+
+    async function addProduct() {
+      const name = document.getElementById("productName").value;
+      if (!name) return alert("Enter a product name first");
+
+      try {
+        const tx = await contract.addProduct(name);
+        await tx.wait();
+        alert("✅ Product added successfully!");
+        document.getElementById("productName").value = "";
+      } catch (err) {
+        console.error("❌ Error adding product:", err);
+        alert("Failed to add product. Check console.");
+      }
+    }
+
+    async function loadProducts() {
+      try {
+        const products = await contract.getAllProducts();
+        const list = document.getElementById("productsList");
+        list.innerHTML = "";
+
+        products.forEach(p => {
+          const li = document.createElement("li");
+          li.innerText = `#${p.id} | ${p.name} | State: ${["Created", "Packed", "Shipped", "Delivered"][p.state]}`;
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error("❌ Error loading products:", err);
+        alert("Failed to load products. See console.");
+      }
+    }
+  </script>
+</body>
+</html>
