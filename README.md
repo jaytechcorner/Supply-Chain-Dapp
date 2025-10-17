@@ -13,5 +13,5 @@ Built with Ethereum and Solidity.
 - Node.js installed
 - Truffle for smart contract development
 - MetaMask (or another Ethereum wallet) for interacting with the contract
-- Ethereum test networ
+- Ethereum test network
 
