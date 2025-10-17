@@ -2,6 +2,10 @@
 Easy to use decentralized web-app to manage and control of supply chain using blockchain and smart contracts.  
 Built with Ethereum and Solidity.  
 
+Firstly, deployed using remix and just html and js in frontend.  
+Then added html internal css and js.  
+Now created a react app using typescript.
+
 ## Features
 
 - Track products through different stages: Created, Packed, Shipped, Delivered.
