@@ -4,7 +4,7 @@ Built with Ethereum and Solidity.
 
 Firstly, deployed using remix and just html and js in frontend.  
 Then added html internal css and js.  
-Now created a react app using typescript. There is REMIX_DEPLOYMENT.md file in frontend-TS check it out if facing any issues.
+Now created a react app using typescript. There is REMIX_DEPLOYMENT.md file in frontend-TS, check it out if facing any issues while deploying.
 
 ## Features
 
